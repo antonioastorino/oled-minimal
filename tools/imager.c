@@ -58,12 +58,8 @@ int main(int argc, char* argv[])
         col  = counter % cols;
         page = row / 8;
         out_image[col][page] |= (buff[b] == '0') << (row % 8);
-        printf(
-            "Page: %zu Col %zu Val %d byte: %d\n",
-            page,
-            col,
-            buff[b] == '0',
-            out_image[col][page]);
+        //        printf("Page: %zu Col %zu Val %d byte: %d\n", page, col, buff[b] == '0',
+        //        out_image[col][page]);
         counter++;
     }
 

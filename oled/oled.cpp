@@ -6,8 +6,8 @@
 #define RES_ 2
 #define DC_ 4
 #define CS_ 3
-static uint8_t oled_SDA;
-static uint8_t oled_CLK;
+#define CLK 13
+#define SDA 12
 
 void oled_start_commands()
 {
@@ -67,8 +67,8 @@ void oled_disable() { digitalWrite(CS_, HIGH); }
     oled_sendByte(0x21);                                                                           \
     oled_sendByte(value)
 #define clockPulse()                                                                               \
-    digitalWrite(oled_CLK, HIGH);                                                                  \
-    digitalWrite(oled_CLK, LOW)
+    digitalWrite(CLK, HIGH);                                                                       \
+    digitalWrite(CLK, LOW)
 
 void reset()
 {
@@ -83,14 +83,12 @@ void oled_sendByte(uint8_t data)
 {
     for (uint8_t mask = 0x80; mask; mask >>= 1)
     {
-        digitalWrite(oled_SDA, (data & mask));
+        digitalWrite(SDA, (data & mask));
         clockPulse();
     }
-#ifdef DEBUG
     SERIAL_PRINT("0x");
     SERIAL_PRINT(data, HEX);
     SERIAL_WRITE(' ');
-#endif
 }
 
 void oled_home()
@@ -107,10 +105,8 @@ void oled_clearDisplay()
     oled_displayBitmap();
 }
 
-void oled_init(uint8_t sda, uint8_t clk)
+void oled_init()
 {
-    oled_SDA = sda;
-    oled_CLK = clk;
     uint8_t multiplex, com_pins, contrast;
     if (DISPLAY_ROWS == 64)
     {
@@ -125,12 +121,12 @@ void oled_init(uint8_t sda, uint8_t clk)
         contrast  = 0x8F;
     }
     pinMode(RES_, OUTPUT);
-    pinMode(oled_CLK, OUTPUT);
-    pinMode(oled_SDA, OUTPUT);
+    pinMode(CLK, OUTPUT);
+    pinMode(SDA, OUTPUT);
     pinMode(DC_, OUTPUT);
     pinMode(CS_, OUTPUT);
     digitalWrite(RES_, HIGH);
-    digitalWrite(oled_CLK, LOW);
+    digitalWrite(CLK, LOW);
     digitalWrite(CS_, LOW);
     oled_start_commands();
     reset();
@@ -176,9 +172,22 @@ void oled_addPixel(uint8_t x, uint8_t y) { graphics_add_pixel(x, y); }
 
 void oled_addInlineSymbol(uint8_t cursor_position, uint8_t page, char c)
 {
-    if (c == 'a')
+    if (c == 'R')
     {
-        uint8_t symbol[8] = {0x05, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0x07};
+        uint8_t symbol[4][8] = {
+            {0x00, 0x80, 0xc0, 0xe0, 0xf0, 0xf8, 0xfc, 0xfe},
+            {0x01, 0x03, 0x07, 0x0f, 0x1f, 0x1f, 0x3f, 0x7f},
+            {0xfe, 0xfc, 0xf8, 0xf0, 0xe0, 0xc0, 0x80, 0x00},
+            {0x7f, 0x3f, 0x1f, 0x1f, 0x0f, 0x07, 0x03, 0x01},
+        };
+        graphics_add_inline_symbol(cursor_position, page, symbol[0]);
+        graphics_add_inline_symbol(cursor_position, page + 1, symbol[1]);
+        graphics_add_inline_symbol(cursor_position + 1, page, symbol[2]);
+        graphics_add_inline_symbol(cursor_position + 1, page + 1, symbol[3]);
+    }
+    else if (c == 'A')
+    {
+        uint8_t symbol[8] = {0x7f, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x7f};
         graphics_add_inline_symbol(cursor_position, page, symbol);
     }
 }
